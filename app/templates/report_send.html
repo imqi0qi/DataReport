@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <style type="text/css">
+
+    table {
+        border-collapse: collapse;
+
+        margin-bottom: 10px;
+    }
+
+    table thead{
+        background-color:rgb(80, 81, 82);
+
+        color:white;
+    }
+
+    table th,td {
+        text-align : center;
+
+        border: 1px solid #999;
+
+        width : 100px;
+
+        height : 30px;
+
+    }
+
+    .title{
+        margin:0;
+
+        font-size:16px;
+
+        font-weight: bold;
+    }
+
+    .head{
+        margin:0;
+
+        font-size: 20px;
+
+        font-weight: bold;
+    }
+
+    .sub_head, .sub_title, #footer{
+        margin:0;
+
+        font-size: 14px;
+
+        color :dimgray;
+
+    }
+
+    .img{
+        margin-bottom: 10px;
+    }
+
+    .img img{
+        width:600px;
+    }
+
+    </style>
+</head>
+
+<body>
+
+    <div id="header"> 
+        <p class="head">{{ rep.header }}</p> 
+        <p class="sub_head">{{ rep.sub_header }}<p> 
+    </div>
+
+    {{ graphs_html | safe }}
+
+</body>
+</html>

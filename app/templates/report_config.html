@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+
+<script type="text/javascript">
+window.onload = function(){
+  var i = 1;
+
+  var graph_info_html = $('#graphs_config_info .graph_info:last').html()
+
+  $('#graphs_config_info .graph_info:last').remove()
+
+  if($('.graph_info').length >= 2){
+
+    $('#btn_subone').show()
+
+  }
+  else{
+    $('#btn_subone').hide()
+  }
+
+
+  $('#btn_addone').click(function(){
+
+      var reg = /graphs\[x\]/g
+
+      var graph_info_div = '<div class="graph_info">' + graph_info_html.replace(reg, 'graphs['+i+']') + '</div>'
+
+      $('#graphs_config_info').append(graph_info_div)
+
+      if($('.graph_info').length >= 2){
+        
+        $('#btn_subone').show()
+      }
+
+      i++
+
+    })
+
+}
+
+function subone_graph(){
+
+  if($('.graph_info').length > 1){
+
+    $('.graph_info:last').remove()
+
+  }
+
+  if($('.graph_info').length == 1){
+
+    $('#btn_subone').hide()
+
+  }
+}
+
+function report_submit(user_id, is_up){
+
+  if(is_up == 1){
+
+    $('#btn_up').html('loading...')
+
+  }else{
+
+    $('#btn_save').html('loading...')
+
+  }
+
+  var data_json = $('#rep_cfg_form').serializeJSON()
+  
+  data_json['is_up'] = is_up
+
+  var data_str = JSON.stringify(data_json)
+
+  $.ajax({
+    url : '/report_submit/' + user_id ,
+    data : data_str,
+    type : 'POST',
+    contentType : 'application/json',
+    async : true,
+    success: function(data){
+
+      console.log(data)
+      
+      data_json = JSON.parse(data)
+
+      if(data_json['status'] == 1){
+
+        var alert_str = '以下图表配置发生错误，请重新配置和提交：\n'
+        
+        var pre_info = data_json['info']['pre_rep']
+
+        var error_cnt = 0
+
+        for(var key in pre_info){
+
+          if(pre_info[key][1] != 0){
+
+            alert_str += '图表：' + pre_info[key][0] + ' 配置错误\n原因：' + pre_info[key][2] + '\n'
+
+            error_cnt += 1
+
+          }
+
+        }
+
+        var add_job = data_json['info']['add_job']
+
+        if(add_job[0] != 1){
+
+          alert_str += '调度任务配置失败\n原因：' + add_info[1]
+
+          error_cnt += 1 
+
+        }
+
+        if(error_cnt == 0){
+
+          window.location.href = '/schedule_list/' + user_id
+
+        }
+        else{
+
+          $('#tip_info').modal('hide')
+
+          $('#tip_info .modal-body').html(alert_str)
+
+          $('#tip_info').modal('show')
+
+          if(is_up == 1){
+
+            $('#btn_up').html('上线')
+
+          }else{
+
+            $('#btn_save').html('保存')
+
+          }
+
+        }
+
+      }
+      else{
+
+        $('#tip_info').modal('hide')
+
+        $('#tip_info .modal-body').html('表单提交失败，请重新提交。')
+
+        $('#tip_info').modal('show')
+
+      }
+
+    }
+  })
+
+  //$('#tip_info').modal('hide')
+//
+  //tip_info = '图片加载中，请稍后...'
+  //  
+  //$('#tip_info .modal-body').html(tip_info)
+//
+  //$('#tip_info').modal('show')
+
+  //$('#wait_modal').modal()
+
+}
+
+</script>
+
+<style type="text/css">
+#rep_cfg{
+  margin-top: 50px; 
+  margin-bottom: 50px;
+  
+  width:85%;
+
+  background-color:#fff;
+
+  padding:80px;
+}
+</style>
+{% endblock %}
+
+{% block nav %}
+
+{{ super() }}
+
+{% endblock %}
+
+{% block contain %}
+{{ super() }}
+  <div id="rep_cfg_contain">
+    <div class="container" style="background-color:#555;">
+      <div id="rep_cfg" class="center-block">
+        <div id="ret_url">
+            <a href="{{ url_for('schedule_list', user_id = user.user_id) }}">返回</a>
+        </div>
+
+        <form id="rep_cfg_form" method="POST" action="">
+          <div role="form">
+            {% if rep %}
+              <input type="hidden" class="form-control" name="rep_id" value="{{ rep.rep_id }}" >
+            {% endif %}
+            <div><h4>任务基本信息</h4></div>
+            <div id="rep_base_info">
+              <div class="row">
+                <div class="col-md-6">
+
+                  <div class="form-group">
+                    <label>任务名：</label>
+                    <input type="text" class="form-control" name="rep_name" {% if rep.rep_name %} value="{{ rep.rep_name }}" {% endif %}>
+                  </div>
+                  <div class="form-group">
+                    <label>任务执行时间：</label>
+                    <input type="text" class="form-control" name="rep_time" {% if rep.run_time %} value="{{ rep.run_time }}" {% endif %}>
+                  </div>
+                  <div class="form-group">
+                    <label>收件人：</label>
+                    <input type="text" class="form-control" name="rep_rec" {% if rep.rec_mail %} value="{{ rep.rec_mail }}" {% endif %}>
+                  </div>
+
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label>负责人：</label>
+                    <input type="text" class="form-control" name="rep_man" value="{{ user.user_name }}" disabled="true">
+                  </div>
+                  <div class="form-group">
+                    <label>发件人：</label>
+                    <input type="text" class="form-control" name="rep_send" {% if rep.send_mail %} value="{{ rep.send_mail }}" {% endif %}>
+                  </div>
+                  <div class="form-group">
+                    <label>抄送人：</label>
+                    <input type="text" class="form-control" name="rep_cc" {% if rep.cc_mail %} value="{{ rep.cc_mail }}" {% endif %}>
+                  </div>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div><h4>报表配置信息</h4></div>
+            <div id="rep_graphs_info">
+              <div id="graph_header">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label>报表标题：</label>
+                      <input type="text" class="form-control" name="rep_header" {% if rep.header %} value="{{ rep.header }}" {% endif %}> 
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label>报表副标题：</label>
+                      <input type="text" class="form-control" name="rep_subheader" {% if rep.sub_header %} value="{{ rep.sub_header }}" {% endif %}>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="graphs_config_info">
+
+                {% if graphs %}
+
+                {% for graph in graphs %}
+
+                  <div class="graph_info">
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label>数据库IP：</label>
+                          <input type="text" class="form-control" name="graphs[{{ graph.graph_id }}][host]" value="{{ graph.sql_host }}">
+                        </div>
+
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label>数据库用户名：</label>
+                          <input type="text" class="form-control" name="graphs[{{ graph.graph_id }}][user]" value="{{ graph.sql_user }}">
+                        </div>
+
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group">
+                          <label>数据库密码：</label>
+                          <input type="password" class="form-control" name="graphs[{{ graph.graph_id }}][passwd]" value="{{ graph.sql_passwd }}">
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="row">
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label>SQL：</label>
+                          <textarea class="form-control"  rows=10 name="graphs[{{ graph.graph_id }}][sql]">{{ graph.sql_query }}</textarea>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label>图表标题：</label>
+                          <input type="text" class="form-control" name="graphs[{{ graph.graph_id }}][title]" value="{{ graph.title }}">
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label>图标副标题：</label>
+                          <input type="text" class="form-control" name="graphs[{{ graph.graph_id }}][subtitle]" value="{{ graph.sub_title }}">
+                        </div>
+                      </div>
+
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-12">
+                        <div class="form-group">
+                          <label class="radio-inline">
+                            <input type="radio" name="graphs[{{ graph.graph_id }}][graph]" value="table" {% if graph.graph_type == "table" %} checked {% endif %}>表格
+                          </label>
+                          <label class="radio-inline">
+                            <input type="radio" name="graphs[{{ graph.graph_id }}][graph]" value="line" {% if graph.graph_type == "line" %} checked {% endif %}>折线图
+                          </label>
+                          <label class="radio-inline">
+                            <input type="radio" name="graphs[{{ graph.graph_id }}][graph]" value="column" {% if graph.graph_type == "column" %} checked {% endif %}>柱状图
+                          </label>
+                          <label class="radio-inline">
+                            <input type="radio" name="graphs[{{ graph.graph_id }}][graph]" value="scatter" {% if graph.graph_type == "scatter" %} checked {% endif %}>散点图
+                          </label>
+                          <label class="radio-inline">
+                            <input type="radio" name="graphs[{{ graph.graph_id }}][graph]" value="area" {% if graph.graph_type == "area" %} checked {% endif %}>面积图
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                {% endfor %}
+
+                {% else %}
+
+                <div class="graph_info">
+                  <div class="row">
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>数据库IP：</label>
+                        <input type="text" class="form-control" name="graphs[0][host]">
+                      </div>
+
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>数据库用户名：</label>
+                        <input type="text" class="form-control" name="graphs[0][user]">
+                      </div>
+
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>数据库密码：</label>
+                        <input type="password" class="form-control" name="graphs[0][passwd]">
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label>SQL：</label>
+                        <textarea class="form-control"  rows=10 name="graphs[0][sql]"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label>图表标题：</label>
+                        <input type="text" class="form-control" name="graphs[0][title]">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label>图标副标题：</label>
+                        <input type="text" class="form-control" name="graphs[0][subtitle]">
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[0][graph]" value="table" checked>表格
+                        </label>
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[0][graph]" value="line" >折线图
+                        </label>
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[0][graph]" value="column">柱状图
+                        </label>
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[0][graph]" value="scatter">散点图
+                        </label>
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[0][graph]" value="area">面积图
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {% endif %}
+
+                <div class="graph_info">
+                  <div class="row">
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>数据库IP：</label>
+                        <input type="text" class="form-control" name="graphs[x][host]">
+                      </div>
+
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>数据库用户名：</label>
+                        <input type="text" class="form-control" name="graphs[x][user]">
+                      </div>
+
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label>数据库密码：</label>
+                        <input type="password" class="form-control" name="graphs[x][passwd]">
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label>SQL：</label>
+                        <textarea class="form-control"  rows=10 name="graphs[x][sql]"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label>图表标题：</label>
+                        <input type="text" class="form-control" name="graphs[x][title]">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label>图标副标题：</label>
+                        <input type="text" class="form-control" name="graphs[x][subtitle]">
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[x][graph]" value="table" checked>表格
+                        </label>
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[x][graph]" value="line" >折线图
+                        </label>
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[x][graph]" value="column">柱状图
+                        </label>
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[x][graph]" value="scatter">散点图
+                        </label>
+                        <label class="radio-inline">
+                          <input type="radio" name="graphs[x][graph]" value="area">面积图
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+                
+              </div>
+
+
+
+            </div>
+              
+            <div id="rep_click_info">  
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="form-group pull-right" id="btn_click_add">
+                    <button type="button" id="btn_addone" class="btn btn-primary" >
+                      <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                      图表
+                    </button>
+                    <button type="button" id="btn_subone" class="btn btn-primary" onclick="subone_graph();">
+                      <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+                      图表
+                    </button>
+                  </div>
+                </div>
+                <div class="col-md-12">
+                  <div class="form-group" id="btn_click_up" style="text-align:center;">
+                    <button type="button" id="btn_up" class="btn btn-primary" onclick="report_submit('{{ user.user_id }}', 1)">上线</button>
+                    <button type="button" id="btn_save" class="btn btn-primary" onclick="report_submit('{{ user.user_id }}', 0)">保存</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

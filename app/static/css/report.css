@@ -1,0 +1,22 @@
+#nav{
+    margin-bottom:0;
+    
+    border-radius:0;
+}
+
+#footer{
+
+    text-align:center;
+    
+    margin:20px; 
+    
+    color:rgb(190, 189, 189);
+}
+
+#ret_url{
+    text-align:right;
+}
+
+#ret_url a{
+    color:#555;
+}

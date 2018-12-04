@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+
+{% block head %}
+{{ super() }}
+
+<script type="text/javascript">
+
+window.onload = function(){
+
+  $('#check_reps').click(function(){
+    
+    if($(this).prop("checked")){
+
+      $.each($('input[name = "reps"]'), function(){
+
+        $(this).prop("checked", true);
+        
+      })
+
+    } 
+    else{
+
+      $.each($('input[name = "reps"]'), function(){
+
+      $(this).prop("checked", false);
+        
+      })
+
+    }
+
+  })
+
+}
+
+function rep_ope(user_id, ope_id){
+
+  var reps_id = new Array();
+
+  $.each($('input[name = "reps"]'), function(){
+
+    if($(this).prop('checked')){
+
+      reps_id.push($(this).val())
+      
+    }
+  })
+
+  var tip_info = ''
+
+  if(reps_id.length == 0){
+
+    tip_info = '没有选择相应任务，请重新选择任务。'
+    
+    $('#tip_info .modal-body').html(tip_info)
+
+    $('#tip_info').modal('show')
+
+  }
+  else{
+    
+    var checked_reps_id = '{"checked_reps_id":[' + reps_id.join(',') + '], "ope_id":'+ ope_id +'}'
+
+    $.ajax({
+      url : '/report_operate/' + user_id,
+      data : checked_reps_id,
+      type : 'POST',
+      contentType : 'application/json',
+      success:function(data){
+        data_json = JSON.parse(data)
+
+        if(data_json['status'] == 0){
+
+          console.log(data_json['info'])
+
+          if(ope_id != 2){
+
+            window.location.reload()
+
+          }
+          else{
+
+            alert('任务运行成功。')
+
+          }
+          
+        }
+      }
+    })
+
+  }
+
+}
+
+var run_status_int = ''
+
+var checked_reps_id = ''
+
+function rep_run(user_id){
+
+  var tip_info = ''
+
+  var reps_id = new Array();
+
+  $.each($('input[name = "reps"]'), function(){
+
+    if($(this).prop('checked')){
+
+      if($("#" + $(this).val() + " td:eq(5)").text() == '下线'){
+
+        tip_info += "任务ID：" + $(this).val() + " 已下线，请上线之后再运行;<br/>"
+
+        $(this).prop({"checked": false})
+
+      }
+      else{
+
+        reps_id.push($(this).val())
+
+      }
+      
+    }
+  })
+
+
+  if(reps_id.length == 0){
+
+    tip_info += "<b>没有任务需要运行，请重新选择对应的任务。</b>"
+
+    $('#tip_info .modal-body').html(tip_info)
+
+    $('#tip_info').modal('show')
+
+  }
+  else{
+
+    if(tip_info != ''){
+
+      $('#tip_info .modal-body').html(tip_info)
+
+      $('#tip_info').modal('show')
+
+    }
+
+    checked_reps_id = '{"checked_reps_id":[' + reps_id.join(',') + ']}'
+
+    $.ajax({
+      url         : '/report_run/' + user_id,
+      data        : checked_reps_id,
+      type        : 'POST',
+      async       : true, 
+      contentType : 'application/json',
+      success     :function(data){
+
+        data_json = JSON.parse(data)
+
+        if(data_json['status'] == 0){
+
+          clearInterval(run_status_int)
+
+          run_status(user_id)
+
+          checked_reps_id = ''
+          
+        }
+      }
+    })
+    
+    run_status_int = setInterval(function(){
+      run_status(user_id)
+      }, 1000)
+    
+  }
+
+}
+
+function run_status(user_id){
+
+  var url = '/running_status/' + user_id
+
+  $.ajax({
+    url         : url,
+    data        : checked_reps_id,
+    type        : 'POST',
+    async       : false, 
+    contentType : 'application/json',
+    success     : function(data){
+
+      //{rep_id : [status, beg_run_time, end_run_time, diff_run_time],...}
+      
+      for(var key in data){
+
+        var status = data[key][0]
+
+        var txt = ''
+
+        switch (status){
+          case "running":
+
+            txt = '运行'
+
+          break;
+          case "waiting":
+
+            txt = '等待'
+
+          break;
+          case "finished":
+
+            txt = '成功'
+
+          break;
+          case "faild":
+
+            txt = '失败'
+          
+          break;
+        }
+        
+        $("#" + key + " td:eq(5)").text(txt)
+        
+        $("#" + key + " td:eq(6)").text(data[key][1])
+
+        $("#" + key + " td:eq(7)").text(data[key][2])
+
+        $("#" + key + " td:eq(8)").text(data[key][3])
+
+      }
+
+    }
+
+  })
+  
+}
+</script>
+
+
+<style type="text/css">
+
+#schedule_table{
+    margin-top: 70px;
+
+}
+
+#schedule_table table td,#schedule_table table th{
+    text-align:center;
+
+    vertical-align: middle;
+}
+
+#empty{
+    margin:100px;
+}
+</style>
+
+{% endblock %}
+
+{% block contain %}
+{{ super() }}
+
+    <div id="schedule_table">
+      <div class="container">
+
+      {% if table_contain %}
+        <div class="row" style="margin-bottom: 10px;">
+          <div class="col-md-12">
+            <button type="button" class="btn btn-primary" onclick="window.location.href = '{{ url_for('report_add', user_id = user.user_id)}}'">新增</button>
+            <button type="button" class="btn btn-primary" onclick="rep_ope('{{ user.user_id }}', 1)">删除</button>
+            <button type="button" class="btn btn-primary" onclick="rep_ope('{{ user.user_id }}', 4)">上线</button>
+            <button type="button" class="btn btn-primary" onclick="rep_ope('{{ user.user_id }}', 5)">下线</button>
+            <button type="button" class="btn btn-primary" onclick="rep_run('{{ user.user_id }}', 1)">运行</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12">
+          
+          <div class="table-responsive" id="reps_table">
+            <table class="table table-hover table-bordered" style="word-break:break-all; word-wrap:break-all;">
+              <thead>
+                <tr>
+                  <th>
+                    <label>
+                      <input type="checkbox" class="checkbox" id="check_reps">
+                    </label>
+                  </th>
+                  <th>任务编号</th>
+                  <th>任务名</th>
+                  <th>负责人</th>
+                  <th>创建时间</th>
+                  <th>状态</th>
+                  <th>开始执行时间</th>
+                  <th>执行结束时间</th>
+                  <th>执行时长</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              {{ table_contain | safe }}
+            </table>
+          </div>
+
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div id="text_summary">
+              <p>共计任务数:{{ sum_reps }}</p>
+            </div>
+          </div>
+          <div class="col-md-6">  
+            <div id="btn_pagination" class="text-right">
+
+              {% if pagination %}
+
+                {{ macros.pagination_widget(pagination, 'schedule_list', user_id = user.user_id) }}
+
+              {% endif %}
+
+            </div>
+          </div>
+        </div>
+
+      {% else %}
+
+        <div id="empty">
+
+          <button class="btn btn-primary center-block" aria-label="Left Align" onclick="window.location.href = '{{ url_for('report_add', user_id = user.user_id)}}'">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>新增任务
+          </button>
+
+        </div>
+
+      {% endif %}
+
+      </div>
+    </div>
+
+{% endblock %}

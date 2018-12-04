@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+
+<script type="text/javascript">
+
+    window.onload = function(){
+
+        var data_json = {{ rep_data | tojson }}
+
+        $.each(data_json, function(k, v){
+
+            if(v['info'] == 'ok'){
+
+                if(v['type'] == 'table'){
+
+                    var new_table_html = create_table_html(v)
+
+                    $('#graphs').append(new_table_html)
+
+                }
+                else{
+
+                    create_graph_html(v) 
+                }
+                
+            }
+            else{
+
+                error_info = '<div class="error_info">' + v['info'] + '</div>'
+
+                $('#graphs').append(error_info)
+
+            }
+
+        })
+
+        function create_table_html(v){
+
+            th_html = ''
+
+            $.each(v['keys'], function(i, n){
+
+               th_html += '<th>' + n + '</th>'
+
+            })
+
+            td_html = ''
+
+            $.each(v['data'], function(i, d){
+
+                td_html += '<tr><td>' + d.join('</td><td>') + '</td></tr>'
+
+            })
+
+            table_template = '<div class="graphs_table">' +
+            '<p>' + v['title'] + '</p>' +
+            '<p>' + v['sub_title'] + '</p>' +
+            '<table class="table table-hover table-bordered">' +
+                '<thead><tr>' +
+                th_html +
+                '</tr></thead>' +
+                '<tbody><tr>' +
+                td_html +
+                '</tr></tbody>' +
+            '</table>' +
+            '</div>'
+
+            return table_template
+            
+        }
+        
+        function create_graph_html(v){
+
+            var new_graph = '<div class="graphs_graph"></div>'
+
+            $('#graphs').append(new_graph)
+
+            var data = v['data']
+
+            var trans_data = data[0].map(function(col, i){
+                return data.map(function(row){
+                    return row[i]
+                })
+            }) 
+
+            //[{}, {}]
+            var arr_data = []
+
+            var cate = []
+
+            $.each(v['keys'], function(i, n){
+
+                if(i==0){
+
+                    cate = trans_data[i]
+
+                }else{
+
+                    arr_data.push({'name':n, 'data':trans_data[i],})
+
+                }
+
+            })
+
+
+            // 图表配置
+            var options = {
+                chart: {
+                    type: v['type']                     //指定图表的类型
+                },
+                title: {
+                    text: v['title']                        // 标题
+                },
+                subtitle: {
+                    text: v['sub_title']                       //副标题
+                },
+                xAxis: {
+                    categories: cate               // x 轴分类
+                },
+                yAxis: {
+                    title: {
+                        text: ''                   // y 轴标题
+                    }
+                },
+                credits:{
+                    enabled: false                   // 禁用版权信息
+                },
+                series: arr_data
+            }
+
+            $(".graphs_graph:last").highcharts(
+                options 
+            )
+            
+        }
+
+
+    }
+
+</script>
+
+<style type="text/css">
+#report_body{
+    margin-top: 50px;
+    margin-bottom: 50px;
+    width: 85%;
+    background-color: #fff;
+    padding: 80px;
+}
+
+#header{
+    text-align:center;
+
+    font-size:2em;
+}
+
+#subheader{
+    text-align:center;
+
+    font-size:1em;
+}
+
+#graphs p{
+    font-size:1.5em;
+}
+
+
+</style>
+
+{% endblock %}
+
+{% block contain %}
+
+<div id="report">
+    <div class="container" style="background-color:#555">
+        <div id="report_body" class="center-block">
+
+            <div id="ret_url">
+
+                <a href="{{ url_for('schedule_list', user_id = user.user_id) }}">返回</a>
+
+            </div>
+            
+            <div id="header">{{ rep.header }}</div>
+            <div id="subheader">{{ rep.sub_header }}</div>
+            <div id="graphs">
+            </div>
+            
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

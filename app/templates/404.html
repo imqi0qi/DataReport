@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+
+<style type="text/css">
+#jumb_404{
+    margin:100px 0;
+
+}
+
+#jumb_404 .jumbotron{
+    background-color: #555;
+    color:#fff;
+    padding:100px;
+}
+
+</style>
+{% endblock %}
+
+{% block contain %}
+
+    <div class="container">
+        <div id="jumb_404" class="center-block">
+            <div class="jumbotron">
+                <h1>404 Not Found.</h1>
+                <p>??<a href="/index" style="color:#fff">??</a></p>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
